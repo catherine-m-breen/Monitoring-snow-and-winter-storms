@@ -1,0 +1,300 @@
+##### This code was written by Catherine Marina Breen (January 2021) with additions from James Swartwood (May 2021)
+
+## load necessary libraries
+
+from __future__ import print_function
+import keras
+#from keras.models import Sequential
+from tensorflow.keras.models import Sequential
+from tensorflow import keras
+from tensorflow.keras import layers
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from keras import optimizers
+from tensorflow.keras import optimizers as opti
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import glob
+import cv2
+import utils
+
+import PIL
+from utils import load_data
+
+from tensorflow import cast
+from tensorflow import float32
+
+opt = opti.RMSprop(learning_rate=10, decay=1e-6)
+opt
+
+
+image_path = 'Z:\images/nonblanks/*.JPG' ## 15,000 images
+labels = pd.read_csv('Z:\images\labels_nonblanks.csv') ## 
+
+
+## imread_collection will take a couple minutes! feel free to get up and stretch
+
+import io
+import sklearn
+from skimage.io import imread_collection
+from skimage.io import imread
+
+images = imread_collection(image_path) ## 15,000 images
+
+
+## So instead we downscale first, then convert to array. 
+
+#from skimage.transform import rescale, resize
+
+import cv2 ## using the cv2.resize function()
+downsample = []
+for i in range(0,len(images)):
+        downsample.append(cv2.resize(images[1], None, fx=0.1, fy=0.1, interpolation = cv2.INTER_CUBIC))
+
+print(len(downsample)) ## double checking that loop worked
+
+# turn Image Collection to array 
+x_data = np.array(downsample)#.astype('float32') ## maybe don't need this step because now working on the cloud
+#x_data = np.array(images)
+print(x_data.shape)
+
+plt.imshow(x_data[100])
+plt.figure(figsize= (0.5,0.5)) ## images will look grainier because they are downscaled
+
+# Dataset is now stored in a Pandas Dataframe
+labels.head()
+labels["Bin"] = pd.DataFrame(index=range(len(labels.SnowCover)),columns=range(1))
+
+for i in range(0,len(labels["SnowCover"])):
+    if labels["SnowCover"][i] >= 1: labels["Bin"][i] = 1
+    else: labels["Bin"][i] = 0
+    
+y_data = labels.SnowCover[0:len(images)].to_numpy() ## make sure this is right column and in the right order
+print(y_data)
+y_data_binary = labels.Bin[0:len(images)].to_numpy().astype('float32') ## make sure this is right column and in the right order
+print(y_data_binary)
+
+### Load Libraries for splitting data
+
+from sklearn.model_selection import train_test_split
+from skimage import io
+io.use_plugin('matplotlib', 'imread')
+
+## Split Data
+
+## Perform a train/validation/test split with 80% of the 
+## data in the training set, 16% of the data in the
+## validation set, 20% test. We use random_state = 1 so get same result every time
+
+# create the test and training datasets
+x_train, x_test, y_train, y_test = train_test_split(x_data[0:len(y_data_binary)], y_data_binary, test_size = 0.2, random_state = 1)
+
+## creating the val set from the trainining set
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size = 0.2, random_state = 1)
+
+## Katie note: could re-index if you want to have the big images
+
+### How many images are in each category
+print(x_train.shape)
+print(x_test.shape)
+print(x_val.shape)
+
+## constraints
+INPUT_SIZE    = 154 * 205 * 3   # An image has 154 x 205 pixels each with Red/Green/Blue (3) values. This matches output from .shape
+#NUM_CLASSES   = 5             # The number of output classes. In this case, from 0 to 5 (0 - 4 of snow cover)
+NUM_CLASSES   = 2             # The number of output classes. In this case, from 0 to 1 (snow/no snow)
+NUM_EPOCHS    = 10            # The number of times we loop over the whole dataset during training
+BATCH_SIZE    = 32            # The size of input data took for one iteration of an epoch
+LEARNING_RATE = 1e-4          # The speed of convergence
+
+def train_model(model, x_train, y_train, x_val, y_val,
+          num_epochs=NUM_EPOCHS, batch_size = BATCH_SIZE, learning_rate=LEARNING_RATE):
+  
+  # we will train the model with the RMSprop algorithm
+ # opt = optimizers.RMSprop(learning_rate=learning_rate, decay=1e-6)
+    #opt = opti.RMSprop(learning_rate=learning_rate, decay=1e-6)
+    opt = keras.optimizers.Adam(learning_rate=learning_rate)
+  # we will use the crossentropy cost, and will look at the accuracy
+    model.compile(loss='sparse_categorical_crossentropy', ## because only two classes
+              optimizer=opt,
+              metrics=['accuracy'])
+  
+  # here we fit the model
+    history = model.fit(x_train, y_train,
+            batch_size=batch_size,
+            epochs=num_epochs,
+            validation_data=(x_val, y_val),
+            shuffle=False)
+  
+    return(model, history)
+
+
+# model A
+## The first neural network will be the simplest, in that it has no hidden layers. It should take the image and 
+## flatten it to a vector for the input, and then have 10 outputs, one for each class. That should be a familiar linear classifier.
+
+def modelA():
+  
+  ## define model 
+  model = keras.Sequential()
+  model.add(Flatten()) ## could pass shape through here too
+  # have 10 outputs, one for each class 
+  model.add(Dense(2))
+  #connect softmax activation function
+  model.add(Activation('softmax')) ## if you wanted to do a multiclass it would be linear
+
+  ## if want to combine Dense and Activation, could also write it as one code
+  ## model.add(Dense(units=10,a activation='softmax'))
+
+  return(model)
+
+# model A
+
+model_A = modelA()
+
+tmodel, history = train_model(model_A, x_train, y_train, x_val, y_val,
+                              num_epochs=NUM_EPOCHS, batch_size = BATCH_SIZE, learning_rate=LEARNING_RATE)
+
+model_A.summary()
+
+# model B
+#Flatten the image to a vector for the input 
+#Use a fully-connected linear layer with 300 hidden-neurons
+#Use a fully-connected layer to the 10 outputs.
+
+def modelB():
+  model = Sequential()
+  model.add(Flatten(input_shape=x_train.shape[1:])) ## it's optional to pass input_shape=x_train.shape[1:] here too
+  model.add(Dense(300, activation='relu')) #Use the ReLU activation function
+  model.add(Dense(2, activation='softmax')) ## can combine dense and activation layer
+ 
+  return(model)
+  
+  test = cast(x_train[1], dtype = float32)
+  
+  test
+  
+  # model C
+# Use a convolution layer with kernel-width 5, depth 25, and padding same, use the ReLU activation function
+# Use a max-pool operation with kernel-width 2 and stride 2
+##Flatten the image to a vector for the next step's input
+## Use a fully-connected layer to the 10 outputs.
+
+def modelC():
+  #image = cast(image, float32)
+  model = Sequential()
+  #model.add(Conv2D(filters=25, input_shape=x_train.shape[1:], kernel_size=(5, 5), padding='same',activation="relu"))
+  model.add(Conv2D(32, 3, strides=2, padding="same"))
+      ## why do i need to pass input shape in the above too. 
+  model.add(MaxPooling2D(pool_size=(2, 2),strides=(2,2)))
+  model.add(Flatten())
+  model.add(Dense(2, activation='softmax')) ## do i need a softmax here?
+  return(model)
+  
+  model_C = modelC()
+tmodel, history = train_model(model_C, x_train, y_train, x_val, y_val,
+                              num_epochs=NUM_EPOCHS, batch_size = BATCH_SIZE, learning_rate=LEARNING_RATE)
+
+model_C.summary()
+
+
+# model D
+#### you can literally change these models in a bajillion different ways, so this 
+### is just what I came up with
+
+
+def modelD():
+ ## Use C as a starting point! 
+##at least 2 convolution layers and at least 2 fully connected layers
+
+  model = Sequential()
+
+##Second convolution layer
+
+## not sure what to make the new depth
+  #model.add(Conv2D(35, input_shape=x_train.shape[1:], kernel_size=(5, 5), padding='same',activation='relu'))
+  #model.add(MaxPooling2D(pool_size=(2, 2),strides=(2,2))) 
+
+##play around with dense layers to see how you can get with validation error
+  model.add(Flatten())
+  model.add(Dense(600, activation='relu'))
+  model.add(Dense(600, activation='relu'))
+  model.add(Dense(600, activation='relu'))
+  model.add(Dense(2, activation='softmax',name='test'))
+
+  return(model)
+
+def modelE():
+  model = Sequential()
+  model.add(MaxPooling2D(pool_size=(3, 3),strides=(3,3)))
+  model.add(Flatten())
+  model.add(Dense(5, activation='softmax'))
+  return(model)
+  
+model_E = modelE()
+#train_model(model_E,x_train,y_train,x_val,y_val, num_epochs=5,batch_size=32,learning_rate=0.0001)
+train_model(model_E,x_train,y_train,x_val,y_val, num_epochs=10,batch_size=32,learning_rate=0.0001)
+model_E.summary()
+
+#
+# loop to train all 4 models and save the history in a list/dictionary.
+model_A = modelA()
+model_B = modelB()
+#model_C = modelC()
+model_D = modelD()
+model_E = modelE()
+
+
+
+model_dict = {} ## better as a dictionary with model type as the key. 
+
+#for i in [model_A, model_B, model_C, model_D]:
+#  model, history = train_model(i,x_train,y_train,x_val,y_val, num_epochs=NUM_EPOCHS,batch_size=BATCH_SIZE,learning_rate=LEARNING_RATE)
+#  model_dict[i] = history
+    
+for i in [model_A, model_B, model_D, model_E]:
+  model, history = train_model(i,x_train,y_train,x_val,y_val, num_epochs=NUM_EPOCHS,batch_size=BATCH_SIZE,learning_rate=LEARNING_RATE)
+  model_dict[i] = history
+
+
+# print out the test accuracy for each model
+
+
+print(model_A.summary())
+print(model_B.summary())
+#print(model_C.summary())
+print(model_D.summary())
+print(model_E.summary())
+
+## first value is score, 2nd is accuracy
+## key is the model in the dictionary
+for key in model_dict.keys():
+  print(key.evaluate(x_test,y_test))
+
+print(model_dict.keys())
+
+## Plot validation and accuracy as a function as epochs
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(16,10))
+#model_labels = 'ABCD'
+#model_names = {model_A:'A', model_B:'B', model_C:'C', model_D:'D'}
+model_names = {model_A:'A', model_B:'B', model_D:'C', model_E:'D'}
+
+for key,history in model_dict.items():
+#TODO loop over your outputs:
+
+    name = model_names[key]
+    val = plt.plot([1,2,3,4,5,6,7,8,9,10],history.history['val_accuracy'], 
+                     '--', label= name + ' Validation')
+    plt.plot([1,2,3,4,5,6,7,8,9,10],history.history['accuracy'], 
+             color=val[0].get_color(),label= name + ' Train')
+
+    plt.xlabel('Epochs', fontsize=20)
+    plt.ylabel('Accuracy', fontsize=20)
+    plt.legend(prop={'size': 16})
+    plt.xlim([1,NUM_EPOCHS])
+
+plt.show()
