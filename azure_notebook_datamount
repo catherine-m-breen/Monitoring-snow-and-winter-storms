@@ -1,1 +1,38 @@
 
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import shutil
+
+import azureml.core
+from azureml.core import Workspace, Datastore, Dataset
+
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
+from tensorflow.keras.models import Model
+
+import pandas as pd
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import PIL
+from PIL import Image
+
+labeled_y = pd.read_csv(os.path.join(os.getcwd(), "data_wCovariates_October12-2021.csv"))
+labeled_y.head()
+
+## set workspace
+ws = Workspace.from_config() 
+print(ws)  ## parameter for the blob string set-up
+
+dataset = Dataset.get_by_name(ws, name='NINAimagesDatasetTest')
+print(dataset)
+
+ctx = dataset.mount(mount_point='./data')
+ctx.start()
+print(ctx.mount_point)
+
+img = cv2.imread(ctx.mount_point + '2018_VILTKAMERA_BACKUP_IS PUT IN TO IMPORT AND RUN TROUGH THE PROGRAM/1000_LsTO55/1000_20171219 (1).JPG')
+plt.imshow(img)
+
+
