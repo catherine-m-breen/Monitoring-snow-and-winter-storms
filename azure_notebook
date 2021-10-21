@@ -1,0 +1,48 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import shutil
+
+import azureml.core
+from azureml.core import Workspace, Datastore, Dataset
+
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
+from tensorflow.keras.models import Model
+
+import pandas as pd
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import PIL
+from PIL import Image
+
+labeled_y = pd.read_csv(os.path.join(os.getcwd(), "data_wCovariates_October12-2021.csv"))
+labeled_y.head()
+
+## set workspace
+ws = Workspace.from_config() 
+print(ws)  ## parameter for the blob string set-up
+
+dataset = Dataset.get_by_name(ws, name='NINAimagesDatasetTest')
+print(dataset)
+
+dataset.download(target_path='.', overwrite=False) ## downloads to the root notebook
+
+### so far this just gets about 36,000 images
+## count the number of images
+src = '/mnt/batch/tasks/shared/LS_root/mounts/clusters/intro2ml/code/Users/cbreen/2018_VILTKAMERA_BACKUP_IS PUT IN TO IMPORT AND RUN TROUGH THE PROGRAM'
+list = os.listdir('/mnt/batch/tasks/shared/LS_root/mounts/clusters/intro2ml/code/Users/cbreen/2018_VILTKAMERA_BACKUP_IS PUT IN TO IMPORT AND RUN TROUGH THE PROGRAM') ## should this path be updated
+number_files = len(list)
+print(number_files)
+file_count = sum(len(files) for _, _, files in os.walk(src))
+print(file_count)
+
+######
+# visualize an image
+import cv2
+test_image =cv2.imread('/mnt/batch/tasks/shared/LS_root/mounts/clusters/intro2ml/code/Users/cbreen/2018_VILTKAMERA_BACKUP_IS PUT IN TO IMPORT AND RUN TROUGH THE PROGRAM/1000_LsTO55/1000_20171219 (1).JPG')
+plt.imshow(test_image)
+
+
+
