@@ -1,4 +1,4 @@
-##### This code was written by Catherine Marina Breen (January 2021) with additions from James Swartwood (May 2021)
+##### This code was written by Catherine Marina Breen (January 2021) with additions to Model E from James Swartwood (May 2021)
 
 ## load necessary libraries
 
@@ -29,7 +29,7 @@ from tensorflow import float32
 opt = opti.RMSprop(learning_rate=10, decay=1e-6)
 opt
 
-
+## these images are stored on the Azure blobe storage
 image_path = 'Z:\images/nonblanks/*.JPG' ## 15,000 images
 labels = pd.read_csv('Z:\images\labels_nonblanks.csv') ## 
 
@@ -41,9 +41,10 @@ import sklearn
 from skimage.io import imread_collection
 from skimage.io import imread
 
+# use sklearn imread_collection to load images into an image collection
 images = imread_collection(image_path) ## 15,000 images
 
-
+#### there is not enough RAM for the images of the whole size
 ## So instead we downscale first, then convert to array. 
 
 #from skimage.transform import rescale, resize
@@ -67,6 +68,7 @@ plt.figure(figsize= (0.5,0.5)) ## images will look grainier because they are dow
 labels.head()
 labels["Bin"] = pd.DataFrame(index=range(len(labels.SnowCover)),columns=range(1))
 
+## to be able to make both a binary classifier and classifier of 5 sizes, add a bined column (the binary classifier) 
 for i in range(0,len(labels["SnowCover"])):
     if labels["SnowCover"][i] >= 1: labels["Bin"][i] = 1
     else: labels["Bin"][i] = 0
