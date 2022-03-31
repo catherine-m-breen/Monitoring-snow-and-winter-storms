@@ -1,0 +1,49 @@
+import os
+import glob #for loading images from a directory
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import cv2
+import random
+import numpy as np
+import pandas as pd
+
+
+## white as snow? What is the best threshold value for snow? 
+threshold = 100 ## can change depending on what you think is best 
+
+# Returns image fitted to the desired size
+def white_pixel_fraction(image):
+  image = mpimg.imread(file)
+  image.shape
+  height, width, color_channel = image.shape
+  bottom_half = round(height/2)
+  #plt.imshow(image[(round(height/2)):height,:]) just bottom half 
+    # errors include (trees, animal in image, etc)
+  cropped = image[(round(height/2)):(height-100),:]
+  white_pixels = np.logical_and(threshold<=cropped[:,:,0],np.logical_and(threshold<=cropped[:,:,1],threshold<=cropped[:,:,2]))
+  num_white = np.sum(white_pixels)
+  num_white 
+  plt.imshow(white_pixels)
+  total_num_pixels = np.logical_and(cropped[:,:,0],np.logical_and(cropped[:,:,1],cropped[:,:,2]))
+  num_pixel = np.sum(total_num_pixels)
+  num_pixel
+  return num_white / num_pixel
+
+index = []
+filename = []
+for file in glob.glob(os.path.join("*")):
+  try:
+    white_pixel_frac = white_pixel_fraction(file)
+    index.append(white_pixel_frac)
+     # Add filename to array
+    filename.append(file)
+
+  except:
+    continue
+
+df = pd.DataFrame({"filename" : filename, "whitePixelIndex" : index})
+df.to_csv("white_pixel_fraction.csv", index=False)
+
+
+
+
