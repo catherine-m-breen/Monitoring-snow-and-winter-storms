@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+import glob
+import pandas as pd
+
+
+# In[21]:
+
+
+files = glob.glob('/Users/cmbreen/Documents/Chapter 1/SnoqData/SNQ_TimelapsePhotos_2013_2014/On_SPole_ViewOf_TowerB/*.jpg', recursive=True)  
+parsivelOutput = pd.read_csv('/Users/cmbreen/Documents/Chapter 1/SnoqData/apu31/parsivelOutput.csv')
+
+
+# ## create df of image metadata
+# Read in the file paths of the images and output a df of filename, date, and hour of photo
+
+# In[15]:
+
+
+def imageMetaData(files):
+    filenameList =[]
+    dateList =[]
+    hourList =[]
+
+    for item in files:
+        filename = item.split('/')[8]
+        date = filename[0:10]
+        hour = filename[11:13]
+        filenameList.append(filename)
+        dateList.append(date)
+        hourList.append(hour)
+        
+    imageDF = pd.DataFrame()
+    imageDF['filename'] = filenameList
+    imageDF['date'] = dateList
+    imageDF['hour'] = hourList
+
+
+# In[25]:
+
+
+imageDF = pd.DataFrame()
+imageDF['filename'] = filenameList
+imageDF['date'] = dateList
+imageDF['hour'] = hourList
+
+
+# In[55]:
+
+
+imageDF
+
+
+# In[59]:
+
+
+parsivelOutput
+#parsivelOutput[parsivelOutput['Date'] == '20141016']
+
+
+# ## conduct merge
+# 
+# change format of date for merge
+
+# In[40]:
+
+
+for i in range(0, len(imageDF['date'])): 
+    imageDF['date'][i] = imageDF['date'][i].replace('_','')
+    
+
+
+# change to int type for both df 
+
+# In[60]:
+
+
+imageDF['hour'] = imageDF['hour'].astype(int)
+parsivelOutput['Hour'] = parsivelOutput['Hour'].astype(int)
+imageDF['date'] = imageDF['date'].astype(str)
+parsivelOutput['Date'] = parsivelOutput['Date'].astype(str)
+
+
+# In[61]:
+
+
+labeledImages = imageDF.merge(parsivelOutput, how='inner', left_on = ['date', 'hour'], right_on = ['Date','Hour'])
+
+
+# In[62]:
+
+
+labeledImages
+
+
+# In[67]:
+
+
+### count the number of each category 
+labeledImages.groupby(['column7']).count()
+
+
+# In[68]:
+
+
+labeledImages.to_csv('labeledImages.csv')
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+## need to check that the 1 min offset doesn't change classifications
+## match with photos and put in folders 
+## to make sure you can see the precipitation
+
