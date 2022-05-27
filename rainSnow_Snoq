@@ -1,0 +1,234 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## load packages
+
+# In[30]:
+
+
+import numpy as np
+import glob
+import pandas as pd
+
+
+# ## load data using glob & read with pandas
+# There are nested folders, so we will use 'recursive = True'
+
+# In[130]:
+
+
+files = glob.glob('/Users/cmbreen/Documents/Chapter 1/SnoqData/apu31/**/*.dat', recursive=True)  
+
+data = []
+for file in files: 
+    datContent1 = [i.strip().split() for i in open(file, encoding='latin1').readlines()]
+    data.append(datContent1)
+
+
+# In[133]:
+
+
+## index 0 is folder, index 1 is file, index 0 is hourly reading
+data[1][1][0]
+
+
+# In[24]:
+
+
+file = "/Users/cmbreen/Documents/Chapter 1/SnoqData/apu31/201505/apu31_2015052811.dat"
+datContent = [i.strip().split() for i in open(file, encoding='latin1').readlines()]
+datContent
+datContent[1][0]
+
+
+# In[102]:
+
+
+## turn it into a table 
+date = datContent[1][0].split(";")[0]
+#print(date)
+values = datContent[1][0].split(";")[1].split(',')
+#print(values)
+
+
+namesOfColumns = []
+for i in range(0,len(values)):
+    namesOfColumns.append('column'+str(i))
+    
+df = pd.DataFrame(columns = namesOfColumns)
+df
+
+
+# In[116]:
+
+
+df.loc[len(df.index)] = values
+display(df)
+Dates = []
+new = Dates.append(date)
+print(Dates)
+
+
+# In[134]:
+
+
+namesOfColumns = []
+for i in range(0,len(values)):
+    namesOfColumns.append('column'+str(i))
+    
+df = pd.DataFrame(columns = namesOfColumns)
+df
+
+
+# In[136]:
+
+
+Dates = []
+
+## loop through every folder
+for i in range(0, len(data)):
+    ## loop through every file
+    for j in range(0, len(data[i])): 
+        contents = data[i][j]
+        data1 = contents[0]
+        ## turn it into a table 
+        date = contents[0].split(";")[0]
+        #print(date)
+        values = contents[0].split(";")[1].split(',')
+        #print(values)
+
+        df.loc[len(df.index)] = values
+        Dates.append(date)
+
+    
+
+
+# In[137]:
+
+
+df
+
+
+# In[140]:
+
+
+## sort list 
+sort = Dates.sort()
+sort
+
+
+# In[142]:
+
+
+### attempt to make code faster; just do first 10 columns 
+Dates
+
+
+# In[234]:
+
+
+def processDat(data):
+    Dates1 = []
+    df1 = pd.DataFrame(columns = ['column0', 'column1', 'column2', 'column3', 'column4', 'column5', 'column6', 'column7', 'column8'])
+
+    ## loop through every folder
+    for i in range(0, len(data)):
+        ## loop through every file
+        for j in range(0, len(data[i])): 
+            contents = data[i][j]
+            data1 = contents[0]
+            ## turn it into a table 
+            fulldate = contents[0].split(";")[0]
+            #dayHour = fulldate[]
+            #print(date)
+            if (fulldate[10:15] == '0100'): # or (fulldate[10:15] == '0000'):
+                values1 = contents[0].split(";")[1].split(',')
+                #print(values)
+
+                df1.loc[len(df1.index)] = values1[0:9]
+                Dates1.append(fulldate)
+    return (Dates1, df1)
+
+
+
+
+# In[ ]:
+
+
+test1, test2 = processDat(data)
+
+
+# In[230]:
+
+
+test2
+
+
+# In[214]:
+
+
+YearMonDayList = []
+hourList = []
+for item in Dates1: 
+    #YearMonDay = Dates1[1][0:8]
+    #hour = Dates1[1][9:11]
+    YearMonDay = item[0:8]
+    hour = item[8:10]
+    YearMonDayList.append(YearMonDay)
+    hourList.append(hour)
+
+
+# In[215]:
+
+
+YearMonDayList
+
+
+# In[216]:
+
+
+df1['Date'] = YearMonDayList
+df1['Hour'] = hourList
+
+
+# In[217]:
+
+
+df1['Dates'] = Dates1
+
+
+# In[218]:
+
+
+df1
+
+
+# In[220]:
+
+
+df1['Hour'] = df1['Hour'].astype(int)
+
+
+# In[221]:
+
+
+df1
+
+
+# In[233]:
+
+
+df1.sort_values(by = ['Date', 'Hour'], ascending = [True, True], na_position = 'first')
+
+
+# In[232]:
+
+
+df1.to_csv('parsivelOutput.csv')
+
+
+# In[ ]:
+
+
+
+
