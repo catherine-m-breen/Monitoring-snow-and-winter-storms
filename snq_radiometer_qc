@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[3]:
+
+
+import numpy as np
+import glob
+import pandas as pd
+
+
+# In[1]:
+
+
+### create image labels using file structure
+## We want these headings: File, Date, Time, SnowCover, Temperature, Weather, location
+
+
+# In[ ]:
+
+
+## parsivel output puts temperature in the column 2 in this case 
+
+
+# In[46]:
+
+
+files = glob.glob('/Users/cmbreen/Documents/Chapter 1/CV4EcologyData/LabeledData_Radiometer_QC/**/*.jpg', recursive=True)  
+parsivelOutput = pd.read_csv('/Users/cmbreen/Documents/Chapter 1/SnoqData/apu31/parsivelOutput_0000_0100.csv')
+parsivelOutput['Hour'] = pd.to_numeric(parsivelOutput['Hour'])
+
+
+# In[47]:
+
+
+## Had to go in and edit the  
+#for some reason there are 2 readings that are buggy, so changed those to nulls (14454, 15356)
+pd.to_numeric(parsivelOutput['column2'])
+
+
+# In[48]:
+
+
+parsivelOutput.head()
+
+
+# In[126]:
+
+
+File = []
+Date = []
+Time = []
+SnowCover = []
+Temperature = []
+Weather = []
+location = []
+disdrometer = []
+
+for file in files:  
+    imageID = file.split('/')[8]
+    File.append(imageID)
+    
+    _date_ = int(imageID.split('_')[0] + imageID.split('_')[1] + imageID.split('_')[2])
+    d_mon_year = pd.to_datetime(_date_, format='%Y%m%d').strftime('%d-%b-%y')
+    Date.append(d_mon_year)
+    
+    Hour = int(imageID.split('_')[3])
+    Minute = str(imageID.split('_')[4])
+    Second = str(imageID.split('_')[5].split('.')[0]) ## extra step to drop the .jpg
+    _Time_ = str(str(Hour) + ':' + (Minute) + ':' + (Second) )
+    Time.append(_Time_)
+    
+    SnowCover.append('na')
+    
+    _Temperature_ = parsivelOutput[(parsivelOutput['Date'] == _date_) & (parsivelOutput['Hour'] == Hour)]['column2'].iloc[0]
+    Temperature.append(_Temperature_)
+    
+    disdrometerReading = file.split('/')[7]
+    disdrometerCode = disdrometerReading.split('_')[0]
+    disdrometer.append(disdrometerCode)
+    
+    _Weather_ = 'None' if disdrometerCode == '00' else 'Snow' if (disdrometerCode == '71') |     (disdrometerCode == '72') | (disdrometerCode == '73') else 'Rain'
+    Weather.append(_Weather_)
+    
+    _location_ = 'SNQradiometer' if (file.split('/')[6]).split('_')[1] == 'Radiometer' else 'SNQtower'
+    location.append(_location_)
+    
+
+
+# In[128]:
+
+
+radiometerImages = pd.DataFrame({'File': File, 'Date':Date, 'Time':Time, 'SnowCover':SnowCover,               'Temperature': Temperature, 'Weather':Weather, 'location':location, 'disdrometer':disdrometer})
+
+
+# In[131]:
+
+
+radiometerImages.to_csv('radiometerImages_QC.csv')
+
+
+# In[ ]:
+
+
+
+
